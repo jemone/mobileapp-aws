@@ -1,0 +1,13 @@
+# Go
+bin/
+*.out
+
+# Node / RN
+node_modules/
+android/.gradle/
+android/app/build/
+ios/build/
+
+# Misc
+.env
+.DS_Store
