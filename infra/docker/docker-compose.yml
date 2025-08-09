@@ -17,6 +17,18 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d:ro
 
+  migrate:
+    image: migrate/migrate:v4.17.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: [
+      "sh","-c",
+      "migrate -path /migrations -database postgres://postgres:postgres@postgres:5432/appdb?sslmode=disable up 2 || test $? = 1"
+    ]
+    volumes:
+      - ../../services/usersvc/migrations:/migrations:ro
+
   usersvc:
     build:
       context: ../../
@@ -24,10 +36,36 @@ services:
     environment:
       APP_PORT: "8080"
       DB_DSN: "postgres://postgres:postgres@postgres:5432/appdb?sslmode=disable"
+      APP_ENV: "dev"
+      OIDC_ISSUER: "http://keycloak:8081/realms/mobileapp"
+      OIDC_AUDIENCE: "mobileapp-mobile"
     ports: ["8080:8080"]
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: ["start-dev", "--http-port=8081", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    ports: ["8081:8081"]
+    volumes:
+      - ../keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/realms/mobileapp/.well-known/openid-configuration"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pgdata:

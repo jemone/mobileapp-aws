@@ -1,0 +1,32 @@
+{
+  "id": "mobileapp",
+  "realm": "mobileapp",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "mobileapp-mobile",
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "attributes": { "pkce.code.challenge.method": "S256" },
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["profile", "email", "roles", "web-origins"]
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "firstName": "Test",
+      "lastName": "User",
+      "enabled": true,
+      "email": "testuser@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        { "type": "password", "value": "testpass", "temporary": false }
+      ]
+    }
+  ]
+}
