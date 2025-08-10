@@ -24,7 +24,7 @@ services:
         condition: service_healthy
     entrypoint: [
       "sh","-c",
-      "migrate -path /migrations -database postgres://postgres:postgres@postgres:5432/appdb?sslmode=disable up 2 || test $? = 1"
+      "migrate -path /migrations -database postgres://postgres:postgres@postgres:5432/appdb?sslmode=disable up || test $? = 1"
     ]
     volumes:
       - ../../services/usersvc/migrations:/migrations:ro
@@ -55,6 +55,12 @@ services:
       KC_HOSTNAME: keycloak
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_DB: postgres
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_URL_PORT: "5432"
     ports: ["8081:8081"]
     volumes:
       - ../keycloak:/opt/keycloak/data/import:ro

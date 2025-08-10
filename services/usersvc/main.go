@@ -11,8 +11,8 @@ import (
 	"time"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
-
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -90,6 +90,8 @@ func main() {
 
 	app := &App{DB: db, Verifier: verifier, Issuer: issuer, ClientID: clientID}
 	r := gin.Default()
+	r.Use(RequestID())
+	r.Use(CORS())
 
 	// health
 	r.GET("/healthz", app.healthz)
@@ -254,4 +256,38 @@ func (a *App) profile(c *gin.Context) {
 		"email": c.GetString("email"),
 		"name":  c.GetString("name"),
 	})
+}
+
+// RequestID — берём X-Request-ID или генерим новый. Кладём в контекст и ответ.
+func RequestID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqID := c.GetHeader("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.NewString()
+		}
+		c.Writer.Header().Set("X-Request-ID", reqID)
+		c.Set("request_id", reqID)
+		c.Next()
+	}
+}
+
+// CORS — dev-режим: разрешаем все origins/headers/methods (на проде — сузим).
+func CORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin == "" {
+			origin = "*"
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		c.Writer.Header().Set("Vary", "Origin")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type,X-Request-ID")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "X-Request-ID")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
 }
